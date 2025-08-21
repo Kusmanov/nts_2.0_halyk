@@ -1,0 +1,5 @@
+to get dll:
+gcc -m64 -shared -o ntt.dll ntt_windows.c -I"c:\Program Files\Java\jdk-19\include" -I"c:\Program Files\Java\jdk-19\include\win32"
+
+to get so:
+gcc -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -fPIC -shared -o ntt.so ntt_linux.c

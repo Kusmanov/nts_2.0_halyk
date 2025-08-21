@@ -1,0 +1,32 @@
+Configuration:
+  status: info
+  Appenders:
+    Console:
+      name: ConsoleAppender
+      PatternLayout:
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"
+    RollingFile:
+      name: RollingFileAppender
+      fileName: "logs/app.log"
+      filePattern: "logs/app-%d{yyyy-MM-dd}-%i.log.gz"  # Файлы будут создаваться по дате
+      PatternLayout:
+        pattern: "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1  # Новый файл каждый день
+          modulate: true
+        SizeBasedTriggeringPolicy:
+          size: "10MB"  # Создание нового файла при превышении 10MB
+  Loggers:
+    Root:
+      level: info
+      AppenderRef:
+        - ref: RollingFileAppender
+#        - ref: ConsoleAppender  # Консольный аппендер
+    Logger:
+      - name: com.example
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: RollingFileAppender
+#          - ref: ConsoleAppender  # Консольный аппендер

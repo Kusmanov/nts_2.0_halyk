@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: nts_2.1
+
+server:
+  port: 8081
