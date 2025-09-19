@@ -1,18 +1,21 @@
 var tempLanguage = '';
 var tempAmount = '';
 var tempScreenID = '';
-var tempTotal = '';
-var tempBalance = '';
-var tempMessageAmount = '';
-var tempMessageAmountMax = '';
-var tempMessageAmountMin = '';
+var tempPopupMainText = '';
 
-var screensArray = [];
+var excludedScreens = [""];
+var balanceHeadlines = ["Шоттағы қалдық", "Остаток на счете", "Balance Inquiry"];
+var totalHeadlines = ["Қолма-қол ақша енгізу", "Взнос наличных", "Deposit Notes"];
+var withdrawalHeadlines = ["Қолма-қол ақша алу", "Выдача наличности", "Withdraw Notes"];
+var pinEntryHeadlines = ["Сіз қате PIN енгіздіңіз!", "Вы ввели неверный PIN!", "PIN code entered is incorrect!"];
 
 var language = '';
 var amountFirstPlayed = false;
-var lastExecutionTime = Date.now();
-var countOnFirstScreen = 0;
+var screenPlayedAt = 0;
+var generalInputPlayedAt = 0;
+var popupPlayedAt = 0;
+var receiptPlayedAt = 0;
+var pinEntryPlayedAt = 0;
 
 /* ********************************************************* */
 
@@ -31,6 +34,9 @@ setInterval(async function () {
 	if (headset.DCWEB_HEADSET_PLUGGED === '1') {
         // Добавляем размытие
 		activateBlur(iframeDoc);
+        // Активируем окно выбора языка
+        Wincor.UI.Service.Provider.DataService.setValues("BSTAFW_PROP_HEADPHONES_STATUS", 1);
+        // Wincor.UI.Service.Provider.ViewService.endView(Wincor.UI.Service.Provider.ViewService.UIRESULT_OK, "WITHDRAWAL", "WITHDRAWAL");
 
 		// Получаем значение элемента lang
 		let lang = Wincor.UI.Service.Provider.LocalizeService.currentLanguage;
@@ -62,99 +68,121 @@ setInterval(async function () {
 
 		console.log(screenID);
 
-        // Воспроизводим все, кроме тех, что в массиве screensArray
-		if (screenID !== tempScreenID && !screensArray.includes(screenID)) {
-            if (screenID === 'IdleLoopPresentation' && countOnFirstScreen <= 6) { // 3 секунды ожидания на "IdleLoopPresentation" экране (500 * 6 = 3000ms)
-                countOnFirstScreen++;
-                return;
+		// Воспроизводим все, кроме исключенных
+		if (!excludedScreens.includes(screenID)) {
+
+		    // Воспроизводим, если screenID поменялся
+		    if (screenID !== tempScreenID && screenID !== "ReceiptInfo" && screenID !== "PinEntry") {
+				if (Date.now() - screenPlayedAt > 2_000) { // Прошло больше 2 секунд
+					tempScreenID = screenID; // Обновляем tempScreenID
+                	amountFirstPlayed = false;
+
+					await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
+
+					screenPlayedAt = Date.now();
+				}
             }
 
-			await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
-			tempScreenID = screenID; // Обновляем tempScreenID
-			// Сброс параметров, чтобы при смене экрана и возвращении на него, аудио воспроизводилось сначала
-            tempMessageAmount = '';
-            tempMessageAmountMax = '';
-            tempMessageAmountMin = '';
-            amountFirstPlayed = false;
-            countOnFirstScreen = 0;
-		}
+            // Получаем значение элемента generalInput для озвучки вводимой с клавиатуры суммы
+            let inputField = iframeDoc.getElementById('generalInput');
+            if (inputField) {
+                // Очищаем поле для ввода суммы от двух первых символов '₸ '
+                let amount = cleanAmount(inputField.value);
+                // Воспроизводим, если amount поменялся
+                if (amount !== tempAmount) {
+					if (Date.now() - generalInputPlayedAt > 2_000) { // Прошло больше 2 секунд
+						tempAmount = amount; // Обновляем tempAmount
 
-		// Получаем значение элемента generalInput для озвучки вводимой с клавиатуры суммы (screen 031, ...)
-		let inputField = iframeDoc.getElementById('generalInput');
-		if (inputField) {
-			// Очищаем поле для ввода суммы от двух первых символов '₸ '
-			let amount = cleanAmount(inputField.value);
-			if (amount !== tempAmount) {
-				if (amount !== '0') {
-					await playbackAmount(amount, language); // Воспроизводим сумму при каждом изменении
-					amountFirstPlayed = true;
-				} else if (amountFirstPlayed === true) {
-					await playbackButton('buttonCorrect', language); // Воспроизводим аудио файл(ы) для нажатой кнопки
-					amountFirstPlayed = false;
-				}
-				tempAmount = amount; // Обновляем tempAmount
-			}
-		}
+						if (amount !== '0') {
+                       		amountFirstPlayed = true;
 
-		// Получаем значение элемента flexDepositResultTotalAmount для озвучки внесенной суммы (screen 102)
-		let resultTotal = iframeDoc.getElementById('flexDepositResultTotalAmount');
-		if (resultTotal) {
-			// Находим все span
-			let spans = resultTotal.querySelectorAll('span');
-			if (!spans) console.log("spans not found");
-			// Извлекаем текст второго span
-			if (spans.length > 1) {
-				let total = spans[1].textContent.trim();
-				if (total !== tempTotal) {
-					await playbackTotal(total, language); // Воспроизводим итоговую сумму
-					tempTotal = total; // Обновляем tempTotal
-				}
-			} else {
-				console.log("Total amount not found");
-			}
-		}
+							await playbackAmount(amount, language); // Воспроизводим сумму при каждом изменении
+						} else if (amountFirstPlayed === true) {
+							amountFirstPlayed = false;
 
-		// Получаем значение элемента MESSAGE для озвучки суммы (для разных скринов используется одинаковый id='MESSAGE')
-		let message = iframeDoc.getElementById('MESSAGE');
-		const outputLine = message.querySelector('span');
-		if (outputLine) {
-			let messageAmount = outputLine.innerText.trim();
-			let match = messageAmount.match(/^([+-])?(\d+)(?:\.(\d+))?/);
-			if (match) {
-				let sign = match[1] || ""; // Знак: "+" или "-", если есть
-				let integerPart = match[2]; // Целая часть числа
-				let fractionalPart = match[3] || ""; // Дробная часть числа, если есть
-				if (screenID === screen234) {
-					let currentTime = Date.now(); // Текущее время
-					let elapsedTime = currentTime - lastExecutionTime; // Разница во времени
-					if (messageAmount !== tempBalance || elapsedTime >= 40000) {
-						await playbackBalance(sign, integerPart, fractionalPart, language);
-						tempBalance = messageAmount; // Обновляем tempBalance
-						lastExecutionTime = Date.now(); // Обновляем время начала
+							await playbackButton('buttonCorrect', language); // Воспроизводим аудио файл(ы) для нажатой кнопки
+						}
+
+						generalInputPlayedAt = Date.now();
 					}
-				} else if (screenID === screen042) {
-					if (messageAmount !== tempMessageAmount) {
-						await playbackMessageAmount(integerPart, fractionalPart, language);
-						tempMessageAmount = messageAmount;
+                }
+            }
+
+            // Получаем значение элемента popupMain для озвучки всплывающего окна
+            let popupMain = iframeDoc.getElementById('popupMain');
+            if (popupMain) {
+                let popupMainText = popupMain.innerText;
+                if (popupMainText !== tempPopupMainText) {
+					if (Date.now() - popupPlayedAt > 2_000) { // Прошло больше 2 секунд
+                    	tempPopupMainText = popupMainText; // Обновляем tempPopupMain
+
+					    await playbackScreen("PopupMain", language); // Воспроизводим аудио файл(ы)
+
+						popupPlayedAt = Date.now();
 					}
-				} else if (screenID === screen043) {
-					if (messageAmount !== tempMessageAmountMax) {
-						await playbackMessageAmountMax(integerPart, fractionalPart, language);
-						tempMessageAmountMax = messageAmount;
+                }
+            }
+
+            if (screenID !== tempScreenID && screenID === "ReceiptInfo") {
+				if (Date.now() - receiptPlayedAt > 2_000) { // Прошло больше 2 секунд
+					tempScreenID = screenID; // Обновляем tempScreenID
+
+					// Получаем значение элемента MESSAGE_HEADER___generated для озвучки суммы транзакции
+					let varBlockSum = iframeDoc.getElementById("MESSAGE_HEADER___generated");
+					if (varBlockSum) {
+						// Берем весь текст
+						let varBlockSumText = varBlockSum.innerText;
+						// Ищем число перед "KZT"
+						let matchSum = varBlockSumText.match(/\s*(-?\d+)(?:\.(\d{1,2}))?\s*KZT/);
+
+						if (matchSum) {
+							// число со знаком, например "-123" или "456"
+							let numberStr = matchSum[1];
+							// знак
+							let sign = numberStr.startsWith("-") ? "-" : "";
+							// целая часть (без знака)
+							let integerPart = Math.abs(parseInt(numberStr, 10));
+							// дробная часть (строка с 2 цифрами)
+							let fractionalPart = matchSum[2] ? matchSum[2].padEnd(2, "0") : "00";
+							// Получаем значение headline
+							let headline = iframeDoc.getElementById("headline").textContent;
+
+							if (balanceHeadlines.includes(headline)) {
+								await playbackBalance(sign, integerPart, fractionalPart, language);
+							} else if (totalHeadlines.includes(headline)) {
+								await playbackTotal(integerPart, language);
+							} else if (withdrawalHeadlines.includes(headline)) {
+								await playbackScreen(screenID, language);
+							}
+						}
 					}
-				} else if (screenID === screen044) {
-					if (messageAmount !== tempMessageAmountMin) {
-						await playbackMessageAmountMin(integerPart, fractionalPart, language);
-						tempMessageAmountMin = messageAmount;
-					}
+
+					receiptPlayedAt = Date.now();
 				}
-			} else {
-				console.log("Unable to recognize the number");
+            }
+
+			if (screenID !== tempScreenID && screenID === "PinEntry") {
+				let headline = iframeDoc.getElementById("headline").innerText.split("\n")[0].trim();
+				console.log(headline);
+
+				if (Date.now() - pinEntryPlayedAt > 2_000) { // Прошло больше 2 секунд
+					tempScreenID = screenID; // Обновляем tempScreenID
+
+					if (pinEntryHeadlines.includes(headline)) {
+						await playbackScreen("PinEntryWrong", language);
+					} else {
+						await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
+					}
+
+					pinEntryPlayedAt = Date.now();
+				}
 			}
 		}
 	} else {
 		// Убираем размытие
 		deactivateBlur(iframeDoc);
+		// Деактивируем окно выбора языка
+		Wincor.UI.Service.Provider.DataService.setValues("BSTAFW_PROP_HEADPHONES_STATUS", 0);
 		// Останавливаем предыдущее воспроизведение, если есть
 		await stopPlayback();
 
@@ -162,13 +190,9 @@ setInterval(async function () {
 		tempLanguage = '';
 		tempAmount = '';
 		tempScreenID = '';
-		tempTotal = '';
-		tempBalance = '';
-		tempMessageAmount = '';
-    	tempMessageAmountMax = '';
-    	tempMessageAmountMin = '';
+		tempPopupMainText = '';
 	}
-}, 500); // Проверяем каждые 500 мс
+}, 1000); // Проверяем каждые 1000 мс
 
 /* ********************************************************* */
 
@@ -176,7 +200,7 @@ async function playbackScreen(screenID, language) {
 	// Получаем список файлов для воспроизведения, соответствующих текущему экрану
 	let data = await getScreenMapping(screenID, language);
 	if (data?.mapping) {
-		playback(data.mapping, language); // Воспроизводим файлы
+		await playback(data.mapping, language); // Воспроизводим файлы
 	} else {
 		console.log('No associated audio files for screen');
 		// Останавливаем предыдущее воспроизведение на новом экране, даже если сопоставленные данные не найдены
@@ -188,7 +212,7 @@ async function playbackButton(buttonId, language) {
 	// Получаем аудиофайлы, сопоставленные кнопке
 	let data = await getButtonMapping(buttonId, language);
 	if (data?.mapping) {
-		playback(data.mapping, language); // Воспроизводим файлы
+		await playback(data.mapping, language); // Воспроизводим файлы
 	} else {
 		console.log('No associated audio files for button');
 	}
@@ -204,7 +228,7 @@ async function playbackAmount(amount, language) {
 			return item; // Оставляем элемент без изменений
 		}
 	});
-	playback(audioFiles, language); // Воспроизводим сумму снятия и сопроводительные файлы
+	await playback(audioFiles, language); // Воспроизводим сумму снятия и сопроводительные файлы
 }
 
 async function playbackTotal(total, language) {
@@ -212,12 +236,12 @@ async function playbackTotal(total, language) {
 	let response = await getTotalMapping('total.txt', language);
 	let audioFiles = response.mapping.map(item => {
 		if (item === "$total") {
-			return String(total.replace(",00", ""));
+			return String(total);
 		} else {
 			return item; // Оставляем элемент без изменений
 		}
 	});
-	playback(audioFiles, language); // Воспроизводим сумму пополнения и сопроводительные файлы
+	await playback(audioFiles, language); // Воспроизводим сумму пополнения и сопроводительные файлы
 }
 
 async function playbackBalance(sign, integerPart, fractionalPart, language) {
@@ -238,62 +262,13 @@ async function playbackBalance(sign, integerPart, fractionalPart, language) {
 			return item; // Оставляем элемент без изменений
 		}
 	});
-	playback(audioFiles, language); // Воспроизводим сумму баланса и сопроводительные файлы
-}
-
-async function playbackMessageAmount(integerPart, fractionalPart, language) {
-	// Получаем аудиофайлы, сопоставленные для воспроизведения суммы
-	let response = await getMessageAmountMapping('message-amount.txt', language);
-	let audioFiles = response.mapping.map(item => {
-		if (item === "$integer") {
-			return String(integerPart);
-		} else if (item === "$fractional") {
-			return String(fractionalPart);
-		} else {
-			return item; // Оставляем элемент без изменений
-		}
-	});
-	playback(audioFiles, language); // Воспроизводим сумму и сопроводительные файлы
-}
-
-async function playbackMessageAmountMax(integerPart, fractionalPart, language) {
-	// Получаем аудиофайлы, сопоставленные для воспроизведения суммы
-	let response = await getMessageAmountMappingMax('message-amount-max.txt', language);
-	let audioFiles = response.mapping.map(item => {
-		if (item === "$integer") {
-			return String(integerPart);
-		} else if (item === "$fractional") {
-			return String(fractionalPart);
-		} else {
-			return item; // Оставляем элемент без изменений
-		}
-	});
-	playback(audioFiles, language); // Воспроизводим сумму и сопроводительные файлы
-}
-
-async function playbackMessageAmountMin(integerPart, fractionalPart, language) {
-	// Получаем аудиофайлы, сопоставленные для воспроизведения суммы
-	let response = await getMessageAmountMappingMin('message-amount-min.txt', language);
-	let audioFiles = response.mapping.map(item => {
-		if (item === "$integer") {
-			return String(integerPart);
-		} else if (item === "$fractional") {
-			return String(fractionalPart);
-		} else {
-			return item; // Оставляем элемент без изменений
-		}
-	});
-	playback(audioFiles, language); // Воспроизводим сумму и сопроводительные файлы
+	await playback(audioFiles, language); // Воспроизводим сумму баланса и сопроводительные файлы
 }
 
 /* ********************************************************* */
 
 function cleanAmount(amount) {
-	if (/^\d/.test(amount)) {
-        return amount;
-    } else {
-        return amount.replace(/^.{2}/, '');
-    }
+    return amount.replace(/₸\s?/g, '').replace(/\./g, '');
 }
 
 function updateLanguage(language) {
@@ -301,22 +276,18 @@ function updateLanguage(language) {
 		tempLanguage = language;
 		tempAmount = '';
 		tempScreenID = '';
-		tempTotal = '';
-		tempBalance = '';
-		tempMessageAmount = '';
-        tempMessageAmountMax = '';
-        tempMessageAmountMin = '';
+		tempPopupMainText = '';
 	}
 }
 
 function activateBlur(iframeDoc) {
-  iframeDoc.body.style.filter = "blur(20px)";
-  iframeDoc.body.style.pointerEvents = "none"; // блокируем клики
+  iframeDoc.body.style.filter = "blur(2px)";
+  //iframeDoc.body.style.pointerEvents = "none"; // блокируем клики
 }
 
 function deactivateBlur(iframeDoc) {
   iframeDoc.body.style.filter = "";
-  iframeDoc.body.style.pointerEvents = "";
+  //iframeDoc.body.style.pointerEvents = "";
 }
 
 /* ********************************************************* */
@@ -347,18 +318,6 @@ function getTotalMapping(filename, language) {
 
 function getBalanceMapping(filename, language) {
 	return sendPostRequest('http://localhost:8081/mapping/balance', { filename, language });
-}
-
-function getMessageAmountMapping(filename, language) {
-	return sendPostRequest('http://localhost:8081/mapping/message-amount', { filename, language });
-}
-
-function getMessageAmountMappingMax(filename, language) {
-	return sendPostRequest('http://localhost:8081/mapping/message-amount-max', { filename, language });
-}
-
-function getMessageAmountMappingMin(filename, language) {
-	return sendPostRequest('http://localhost:8081/mapping/message-amount-min', { filename, language });
 }
 
 /* ********************************************************* */
@@ -395,3 +354,61 @@ async function sendGetRequest(url) {
 }
 
 /* ********************************************************* */
+
+/*
+
+--- <<< Код ListViewModel.js >>> ---
+try {
+    // Очистка перед циклом
+    localStorage.setItem("myElements", "[]");
+
+    for(let i = 0; i < srcLen; i++) {
+        let item = elements[i];
+
+        // Проверка условия
+        if (typeof item.prominent === "string") {
+            const match = item.prominent.match(/LOV(\d)/); // ищем LOV + цифру
+            if (match) {
+                item.eppkey = parseInt(match[1], 10); // присваиваем eppkey цифру после LOV
+                item.currentViewId = localStorage.getItem("currentViewId"); // присваиваем currentViewId
+            }
+        }
+
+        // Запись элементов в localStorage
+        try {
+            // Клонируем объект (без функций)
+            const safeItem = JSON.parse(JSON.stringify(item));
+            // Считываем уже сохранённые элементы (или создаём новый массив)
+            let stored = JSON.parse(localStorage.getItem("myElements")) || [];
+            // Добавляем текущий элемент
+            stored.push({ index: i, element: safeItem });
+            // Сохраняем обратно
+            localStorage.setItem("myElements", JSON.stringify(stored));
+        } catch (err) {
+            // Если ошибка — тоже достаём массив
+            let stored = JSON.parse(localStorage.getItem("myElements")) || [];
+            stored.push({ index: i, error: `[Error serializing item: ${err}]` });
+            localStorage.setItem("myElements", JSON.stringify(stored));
+        }
+
+--- <<< Код start.html >>> ---
+<script src="../../lib/nts.js"></script>
+
+--- <<< Код selection.html >>> ---
+command: {id: $data.result, type: $root.CMDTYPE.BUTTON, state: $data.state, eppkey: $data.eppkey }">
+
+--- <<< Код selectioncancel.html >>> ---
+command: {id: $data.result, type: $root.CMDTYPE.BUTTON, state: $data.state, eppkey: $data.eppkey }">
+
+--- <<< Код amountselection.html >>> ---
+command: {id: $data.result, type: $root.CMDTYPE.BUTTON, state: $data.state, eppkey: $data.eppkey }">
+
+--- <<< Код receipt.html >>> ---
+data-bind="command: {id: 'PRINT', type: CMDTYPE.BUTTON, label: {html: getLabel('GUI_[#VIEW_KEY#]_Button_Print', 'Print')}, eppkey: 1 }">
+data-bind="command: {id: 'CONFIRM', type: CMDTYPE.BUTTON, label: {html: getLabel('GUI_[#VIEW_KEY#]_Button_Confirm', 'Confirm')}, eppkey: 2 }">
+
+--- <<< Код question.html >>> ---
+data-bind="command: {id: 'NO', type: CMDTYPE.BUTTON, state: CMDSTATE.ENABLED, label: {text: getLabel('GUI_[#VIEW_KEY#]_Button_No', 'No')}, eppkey: 2 }">
+data-bind="command: {id: 'YES', type: CMDTYPE.BUTTON, state: CMDSTATE.ENABLED, label: {text: getLabel('GUI_[#VIEW_KEY#]_Button_Yes', 'Yes')}, eppkey: 1 }">
+
+*/

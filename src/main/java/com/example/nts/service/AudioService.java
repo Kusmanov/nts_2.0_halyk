@@ -19,6 +19,8 @@ public class AudioService {
     private volatile boolean playbackStopped;
 
     public void playback(String language, List<String> files) {
+        playbackStopped = false;
+
         for (String file : files) {
             // Указываем путь к аудио файлу
             File audioFile = new File("audio/" + language + "/" + file);
@@ -29,6 +31,12 @@ public class AudioService {
             }
 
             try (AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile)) {
+                // Перед созданием нового Clip — останавливаем старый
+                if (clip != null && clip.isRunning()) {
+                    clip.stop();
+                    clip.close();
+                }
+
                 // Получаем Clip (объект для воспроизведения)
                 clip = AudioSystem.getClip();
                 clip.open(audioStream);
@@ -67,7 +75,9 @@ public class AudioService {
             }
         }
 
-        clip.close();
+        if (clip != null) {
+            clip.close();
+        }
     }
 
     public void stopPlayback() {
@@ -76,6 +86,5 @@ public class AudioService {
             Thread.sleep(200); // Задержка должна быть длительнее чем в методе playback
         } catch (Exception e) {
         }
-        playbackStopped = false;
     }
 }

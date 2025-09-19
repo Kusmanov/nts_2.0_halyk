@@ -1,0 +1,4 @@
+016.1_ReceiptInfoCashIn_rus.wav
+$total
+tenge.wav
+023_2_ReceiptInfo_rus.wav
