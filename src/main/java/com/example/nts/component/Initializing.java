@@ -28,7 +28,6 @@ public class Initializing {
                 fileService.copyFile("lib", file);
             }
 
-
             // Копируем содержимое ресурса setup в корневую директорию
             for (String file : fileService.getFileList("setup")) {
                 fileService.copyFile("setup", file);
