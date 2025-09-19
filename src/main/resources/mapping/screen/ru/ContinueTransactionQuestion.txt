@@ -1,0 +1,2 @@
+018_ContinueTransactionQuestion_rus.wav
+018_1_ReceiptQuestion_rus.wav
