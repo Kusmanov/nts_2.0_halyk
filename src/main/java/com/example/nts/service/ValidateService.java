@@ -29,7 +29,7 @@ public class ValidateService {
         return true;
     }
 
-    public boolean isValidName(String id, List<String> filenames) {
-        return filenames.contains(id);
+    public boolean isValidName(String name, List<String> filenames) {
+        return filenames.contains(name);
     }
 }
