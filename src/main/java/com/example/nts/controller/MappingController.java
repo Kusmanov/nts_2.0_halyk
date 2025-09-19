@@ -56,9 +56,8 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        String directory = "screen";
         String screenID = request.getScreenID() + ".txt"; // Добавляем .txt к тексту
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
+        List<String> filenames = fileService.getFileList("mapping/screen/" + language);
 
         // Валидация screen ID
         if (!validateService.isValidName(screenID, filenames)) {
@@ -67,7 +66,7 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + screenID));
+        response.put("mapping", fileService.getMapping("mapping/screen/" + language + "/" + screenID));
         logger.info("Успешно получены соответствия из {} для воспроизведения экрана на {}", screenID, language);
         return ResponseEntity.ok(response);
     }
@@ -92,9 +91,8 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        String directory = "button";
         String buttonID = request.getButtonID() + ".txt"; // Добавляем .txt к тексту
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
+        List<String> filenames = fileService.getFileList("mapping/button/" + language);
 
         // Валидация Button ID
         if (!validateService.isValidName(buttonID, filenames)) {
@@ -103,7 +101,7 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + buttonID));
+        response.put("mapping", fileService.getMapping("mapping/button/" + language + "/" + buttonID));
         logger.info("Успешно получены соответствия из {} для воспроизведения кнопки на {}", buttonID, language);
         return ResponseEntity.ok(response);
     }
@@ -128,9 +126,8 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        String directory = "amount";
         String filename = request.getFilename();
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
+        List<String> filenames = fileService.getFileList("mapping/amount/" + language);
 
         // Валидация названия файла
         if (!validateService.isValidName(filename, filenames)) {
@@ -139,7 +136,7 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + filename));
+        response.put("mapping", fileService.getMapping("mapping/amount/" + language + "/" + filename));
         logger.info("Успешно получены соответствия из {} для воспроизведения введенной суммы на {}", filename, language);
         return ResponseEntity.ok(response);
     }
@@ -164,9 +161,8 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        String directory = "total";
         String filename = request.getFilename();
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
+        List<String> filenames = fileService.getFileList("mapping/total/" + language);
 
         // Валидация названия файла
         if (!validateService.isValidName(filename, filenames)) {
@@ -175,7 +171,7 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + filename));
+        response.put("mapping", fileService.getMapping("mapping/total/" + language + "/" + filename));
         logger.info("Успешно получены соответствия из {} для воспроизведения суммы пополнения на {}", filename, language);
         return ResponseEntity.ok(response);
     }
@@ -200,9 +196,8 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        String directory = "balance";
         String filename = request.getFilename();
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
+        List<String> filenames = fileService.getFileList("mapping/balance/" + language);
 
         // Валидация названия файла
         if (!validateService.isValidName(filename, filenames)) {
@@ -211,116 +206,8 @@ public class MappingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + filename));
+        response.put("mapping", fileService.getMapping("mapping/balance/" + language + "/" + filename));
         logger.info("Успешно получены соответствия из {} для воспроизведения суммы баланса на {}", filename, language);
-        return ResponseEntity.ok(response);
-    }
-
-    /* MESSAGE-AMOUNT */
-    @Operation(summary = "Get mapping filenames for message-amount")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200",
-                    description = "Successful response",
-                    content = @Content(mediaType = "application/json"))
-    })
-    @PostMapping("/message-amount")
-    public ResponseEntity<Map<String, List<String>>> messageAmount(@RequestBody @Valid AmountMappingRequest request) {
-        Map<String, List<String>> response = new HashMap<>();
-
-        String language = request.getLanguage();
-
-        // Валидация языка
-        if (!validateService.isValidLanguage(language)) {
-            response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        String directory = "message-amount";
-        String filename = request.getFilename();
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
-
-        // Валидация названия файла
-        if (!validateService.isValidName(filename, filenames)) {
-            response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + filename);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + filename));
-        logger.info("Успешно получены соответствия из {} для воспроизведения суммы на {}", filename, language);
-        return ResponseEntity.ok(response);
-    }
-
-    /* MESSAGE-AMOUNT-MAX */
-    @Operation(summary = "Get mapping filenames for message-amount-max")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200",
-                    description = "Successful response",
-                    content = @Content(mediaType = "application/json"))
-    })
-    @PostMapping("/message-amount-max")
-    public ResponseEntity<Map<String, List<String>>> messageAmountMax(@RequestBody @Valid AmountMappingRequest request) {
-        Map<String, List<String>> response = new HashMap<>();
-
-        String language = request.getLanguage();
-
-        // Валидация языка
-        if (!validateService.isValidLanguage(language)) {
-            response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        String directory = "message-amount-max";
-        String filename = request.getFilename();
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
-
-        // Валидация названия файла
-        if (!validateService.isValidName(filename, filenames)) {
-            response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + filename);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + filename));
-        logger.info("Успешно получены соответствия из {} для воспроизведения максимальной суммы на {}", filename, language);
-        return ResponseEntity.ok(response);
-    }
-
-    /* MESSAGE-AMOUNT-MIN */
-    @Operation(summary = "Get mapping filenames for message-amount-min")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200",
-                    description = "Successful response",
-                    content = @Content(mediaType = "application/json"))
-    })
-    @PostMapping("/message-amount-min")
-    public ResponseEntity<Map<String, List<String>>> messageAmountMin(@RequestBody @Valid AmountMappingRequest request) {
-        Map<String, List<String>> response = new HashMap<>();
-
-        String language = request.getLanguage();
-
-        // Валидация языка
-        if (!validateService.isValidLanguage(language)) {
-            response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        String directory = "message-amount-min";
-        String filename = request.getFilename();
-        List<String> filenames = fileService.getFilenames("mapping/" + directory + "/" + language + "/");
-
-        // Валидация названия файла
-        if (!validateService.isValidName(filename, filenames)) {
-            response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + filename);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
-        }
-
-        response.put("mapping", fileService.getMappingFilenames("mapping/" + directory + "/" + language + "/" + filename));
-        logger.info("Успешно получены соответствия из {} для воспроизведения минимальной суммы на {}", filename, language);
         return ResponseEntity.ok(response);
     }
 }

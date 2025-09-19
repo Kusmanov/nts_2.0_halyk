@@ -57,7 +57,7 @@ public class AudioController {
         }
 
         List<String> audioFiles = request.getAudioFiles();
-        List<String> filenames = fileService.getFilenames("audio/" + language + "/");
+        List<String> filenames = fileService.getFileList("audio/" + language);
 
         // Валидация имени файлов
         if (!validateService.isValidFiles(audioFiles, filenames)) {

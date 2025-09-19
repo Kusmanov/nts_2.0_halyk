@@ -24,8 +24,13 @@ public class Initializing {
     public void init() {
         try {
             // Копируем содержимое ресурса lib в корневую директорию
-            for (String resourcePath : fileService.getFilesInResources("lib")) {
-                fileService.copyFileFromResourcesToRoot(resourcePath);
+            for (String file : fileService.getFileList("lib")) {
+                fileService.copyFile("lib", file);
+            }
+
+            // Копируем содержимое ресурса setup в корневую директорию
+            for (String file : fileService.getFileList("setup")) {
+                fileService.copyFile("setup", file);
             }
 
             // Загружаем ntt.dll
@@ -44,18 +49,6 @@ public class Initializing {
                 System.exit(1);
             }
 
-//            // Копируем содержимое ресурса audio в корневую директорию
-//            for (String resourcePath : fileService.getFilesInResources("audio")) {
-//                fileService.copyFileFromResourcesToRoot(resourcePath);
-//            }
-//            // Копируем содержимое ресурса mapping в корневую директорию
-//            for (String resourcePath : fileService.getFilesInResources("mapping")) {
-//                fileService.copyFileFromResourcesToRoot(resourcePath);
-//            }
-//            // Копируем содержимое ресурса setup в корневую директорию
-//            for (String resourcePath : fileService.getFilesInResources("setup")) {
-//                fileService.copyFileFromResourcesToRoot(resourcePath);
-//            }
         } catch (Exception e) {
             logger.error("Ошибка инициализации: ", e);
         }

@@ -8,10 +8,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,100 +22,89 @@ public class FileService {
     @Autowired
     private ResourceLoader resourceLoader;
 
-    // Метод для получения названий файлов по указанному пути
-    public List<String> getFilenames(String dirPath) {
-        List<String> filenames = new ArrayList<>();
-        try {
-            Path path = Paths.get(dirPath);
-
-            // Получаем файлы из директории
-            Files.list(path).forEach(resourcePath -> {
-                if (Files.isRegularFile(resourcePath)) {
-                    String filename = resourcePath.getFileName().toString();
-                    filenames.add(filename);
-                }
-            });
-        } catch (IOException e) {
-            logger.error("Ошибка получения названий файлов по пути {}", dirPath);
-        }
-        return filenames;
-    }
-
     // Метод получения списка соответствий файлов для экранов, кнопок или суммы
-    public List<String> getMappingFilenames(String resourcePath) {
-        try {
-            Path filePath = Paths.get(resourcePath);
-            // Чтение всех строк файла в список
-            List<String> mapping = Files.readAllLines(filePath);
-            // Применяем trim() к каждому элементу и сохраняем результат
-            mapping = mapping.stream()
-                    .map(String::trim)
-                    .toList();
-            return mapping;
-        } catch (IOException e) {
-            logger.error("Ошибка получения соответствий файлов для {}", resourcePath);
-        }
-        return new ArrayList<>();
-    }
-
-    // Метод для получения названий ресурсных файлов по указанному пути
-    public List<String> getFilesInResources(String dirPath) {
-        List<String> filesInResources = new ArrayList<>();
-
-        try {
-            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-
-            // Загружаем все ресурсы внутри указанного каталога и его подкаталогов
-            Resource[] resources = resolver.getResources("classpath*:" + dirPath + "/**");
-
-            for (Resource resource : resources) {
-                if (resource.exists() && resource.isReadable()) {
-                    // Добавляем путь к файлу в список
-                    filesInResources.add(resource.getURI().toString().replaceFirst(".*!/+", ""));
-                }
+    public List<String> getMapping(String resourcePath) {
+        List<String> mapping = new ArrayList<>();
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                logger.error("Файл не найден в ресурсах: {}", resourcePath);
+                return mapping;
+            }
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+                mapping = reader.lines()
+                        .map(String::trim)
+                        .toList();
             }
         } catch (IOException e) {
-            logger.error("Ошибка получения списка фалов в директории с ресурсами приложения: {}", dirPath);
+            logger.error("Ошибка чтения ресурса: {}", resourcePath, e);
         }
-
-        return filesInResources;
+        return mapping;
     }
 
-    // Копирование файлов из ресурсной директории в корневую директорию приложения, по такому же относительному пути
-    public void copyFileFromResourcesToRoot(String resourcePath) {
-        try {
-            // Получаем ресурс из classpath
-            Resource resource = resourceLoader.getResource("classpath:" + resourcePath);
+    // Копирование файлов из ресурсной директории в корневую директорию приложения
+    public void copyFile(String dir, String file) {
+        String resourcePath = dir + "/" + file;
+        String targetPathStr = resourcePath; // сохраняем с тем же относительным путём
+        Resource resource = resourceLoader.getResource("classpath:" + resourcePath);
 
-            // Проверяем, существует ли ресурс
-            if (!resource.exists()) {
-                logger.error("Директория с ресурсами не найдена: {}", resourcePath);
+        if (!resource.exists()) {
+            logger.error("Ресурс не найден в classpath: {}", resourcePath);
+            return;
+        }
+
+        Path targetPath = Paths.get(targetPathStr);
+
+        try {
+            // Создаем родительскую директорию, если её нет
+            if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
+                Files.createDirectories(targetPath.getParent());
+                logger.info("Создана директория: {}", targetPath.getParent());
+            }
+
+            if (Files.exists(targetPath)) {
                 return;
             }
 
-            // Получаем URI ресурса
-            Path sourcePath = Paths.get(resource.getURI());
+            // Копируем потоками
+            try (InputStream inputStream = resource.getInputStream();
+                 OutputStream outputStream = new FileOutputStream(targetPath.toFile())) {
 
-            // Определяем целевой путь в корневой директории приложения
-            Path targetPath = Paths.get(resourcePath);
+                byte[] buffer = new byte[8192]; // 8 KB буфер
+                int bytesRead;
+                long totalBytes = 0;
 
-            // Создаем родительскую директорию, если она не существует
-            Files.createDirectories(targetPath.getParent());
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                    totalBytes += bytesRead;
+                }
 
-            // Копируем файл, если его не было ранее
-            if (!Files.exists(targetPath)) {
-                try (InputStream inputStream = resource.getInputStream();
-                     OutputStream outputStream = new FileOutputStream(targetPath.toFile())) {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                    }
-                    logger.info("Файл скопирован из ресурсной директории {} в корневую директорию {}", sourcePath, targetPath);
+                logger.info("Файл {} успешно скопирован в {} ({} байт)", resourcePath, targetPath, totalBytes);
+            }
+
+        } catch (IOException e) {
+            logger.error("Ошибка при копировании ресурса {} в {}", resourcePath, targetPath, e);
+        }
+    }
+
+    // Метод для получения списка файлов внутри "resources"
+    public List<String> getFileList(String resourcePath) {
+        List<String> files = new ArrayList<>();
+        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+
+        try {
+            // Загружаем все ресурсы из указанной директории (и поддиректорий)
+            Resource[] resources = resolver.getResources("classpath*:" + resourcePath + "/**");
+
+            for (Resource resource : resources) {
+                if (resource.exists() && resource.isReadable()) {
+                    // имя файла (без пути внутри JAR)
+                    files.add(resource.getFilename());
                 }
             }
         } catch (IOException e) {
-            logger.error("Ошибка копирования файла из ресурсной в корневую директорию для {}", resourcePath);
+            e.printStackTrace();
         }
+
+        return files;
     }
 }

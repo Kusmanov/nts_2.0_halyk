@@ -5,8 +5,10 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import javax.sound.sampled.*;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @Service
@@ -22,55 +24,55 @@ public class AudioService {
         playbackStopped = false;
 
         for (String file : files) {
-            // Указываем путь к аудио файлу
-            File audioFile = new File("audio/" + language + "/" + file);
+            String resourcePath = "/audio/" + language + "/" + file;
 
-            if (!audioFile.exists()) {
-                logger.error("Файл " + file + " не найден");
-                break;
-            }
+            try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
+                if (is == null) {
+                    logger.error("Файл {} не найден в ресурсах", resourcePath);
+                    break;
+                }
 
-            try (AudioInputStream audioStream = AudioSystem.getAudioInputStream(audioFile)) {
-                // Перед созданием нового Clip — останавливаем старый
-                if (clip != null && clip.isRunning()) {
+                try (AudioInputStream audioStream = AudioSystem.getAudioInputStream(new BufferedInputStream(is))) {
+                    // Перед созданием нового Clip — останавливаем старый
+                    if (clip != null && clip.isRunning()) {
+                        clip.stop();
+                        clip.close();
+                    }
+
+                    // Получаем Clip (объект для воспроизведения)
+                    clip = AudioSystem.getClip();
+                    clip.open(audioStream);
+
+                    // Воспроизводим аудиофайл
+                    clip.start();
+
+                    logger.info("Воспроизводится аудиофайл: {}", file);
+
+                    // Устанавливаем задержку, чтобы clip успел стартовать
+                    while (!clip.isActive()) {
+                        Thread.sleep(100);
+                    }
+
+                    // Ждем завершения воспроизведения
+                    while (clip.isActive() && !playbackStopped) {
+                        Thread.sleep(100);
+                    }
+
                     clip.stop();
-                    clip.close();
-                }
 
-                // Получаем Clip (объект для воспроизведения)
-                clip = AudioSystem.getClip();
-                clip.open(audioStream);
-
-                // Воспроизводим аудиофайл
-                clip.start();
-
-                logger.info("Воспроизводится аудиофайл: " + file);
-
-                // Устанавливаем задержку, чтобы clip успел стартовать
-                while (!clip.isActive()) {
-                    Thread.sleep(100);
-                }
-
-                // Ждем завершения воспроизведения
-                while (clip.isActive() && !playbackStopped) {
-                    Thread.sleep(100);
-                }
-
-                clip.stop();
-
-                // Останавливаем выполнение кода, если воспроизведение было остановлено
-                if (playbackStopped) {
-                    logger.info("Воспроизведение было остановлено");
-                    break; // Прекращаем воспроизведение
+                    if (playbackStopped) {
+                        logger.info("Воспроизведение было остановлено");
+                        break;
+                    }
                 }
             } catch (UnsupportedAudioFileException e) {
-                logger.error("Формат файла " + file + " не поддерживается");
+                logger.error("Формат файла {} не поддерживается", file);
             } catch (IOException e) {
-                logger.error("Ошибка чтения файла: " + file);
+                logger.error("Ошибка чтения файла: {}", file, e);
             } catch (LineUnavailableException e) {
-                logger.error("Ошибка воспроизведения файла: " + file);
+                logger.error("Ошибка воспроизведения файла: {}", file, e);
             } catch (Exception e) {
-                logger.info("Процесс воспроизведения был прерван");
+                logger.info("Процесс воспроизведения был прерван", e);
                 Thread.currentThread().interrupt();
             }
         }
