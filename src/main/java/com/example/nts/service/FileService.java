@@ -45,7 +45,6 @@ public class FileService {
     // Копирование файлов из ресурсной директории в корневую директорию приложения
     public void copyFile(String dir, String file) {
         String resourcePath = dir + "/" + file;
-        String targetPathStr = resourcePath; // сохраняем с тем же относительным путём
         Resource resource = resourceLoader.getResource("classpath:" + resourcePath);
 
         if (!resource.exists()) {
@@ -53,7 +52,7 @@ public class FileService {
             return;
         }
 
-        Path targetPath = Paths.get(targetPathStr);
+        Path targetPath = Paths.get(resourcePath);
 
         try {
             // Создаем родительскую директорию, если её нет
@@ -87,7 +86,7 @@ public class FileService {
         }
     }
 
-    // Метод для получения списка файлов внутри "resources"
+    // Метод для получения списка файлов из "resources"
     public List<String> getFileList(String resourcePath) {
         List<String> files = new ArrayList<>();
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
@@ -103,7 +102,7 @@ public class FileService {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Ошибка при попытке получения списка файлов из \"resources\"");
         }
 
         return files;
