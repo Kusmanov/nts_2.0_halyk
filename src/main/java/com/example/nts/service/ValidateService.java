@@ -12,17 +12,17 @@ public class ValidateService {
 
     public boolean isValidLanguage(String language) {
         if (language.equals("kz") || language.equals("ru") || language.equals("en")) {
-            logger.error("Ошибка валидации языка: {}", language);
             return true;
         }
+        logger.error("Ошибка валидации языка: {}", language);
         return false;
     }
 
     public boolean isValidNumber(int intNumber) {
         if (intNumber >= -999_999_999 && intNumber <= 999_999_999) {
-            logger.error("Ошибка валидации числа: {}", intNumber);
             return true;
         }
+        logger.error("Ошибка валидации числа: {}", intNumber);
         return false;
     }
 
@@ -40,9 +40,9 @@ public class ValidateService {
 
     public boolean isValidName(String filename, List<String> filenames) {
         if (filenames.contains(filename)) {
-            logger.error("Ошибка валидации имени файла: {}", filename);
             return true;
         }
+        logger.error("Ошибка валидации имени файла: {}", filename);
         return false;
     }
 }

@@ -58,7 +58,7 @@ public class MappingController {
 
         // Валидация screen ID
         if (!validateService.isValidName(screenID, filenames)) {
-            response.put("Screen not found, available", filenames);
+            response.put("available", filenames);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
