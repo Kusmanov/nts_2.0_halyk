@@ -28,8 +28,6 @@ import java.util.Map;
 @RequestMapping("/mapping")
 @Tag(name = "Get mapping filenames")
 public class MappingController {
-    private static final Logger logger = LogManager.getLogger(MappingController.class);
-
     @Autowired
     ValidateService validateService;
 
@@ -52,7 +50,6 @@ public class MappingController {
         // Валидация языка
         if (!validateService.isValidLanguage(language)) {
             response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -62,12 +59,10 @@ public class MappingController {
         // Валидация screen ID
         if (!validateService.isValidName(screenID, filenames)) {
             response.put("Screen not found, available", filenames);
-            logger.error("Ошибка валидации имени файла: " + screenID);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
         response.put("mapping", fileService.getMapping("mapping/screen/" + language + "/" + screenID));
-        logger.info("Успешно получены соответствия из {} для воспроизведения экрана на {}", screenID, language);
         return ResponseEntity.ok(response);
     }
 
@@ -87,7 +82,6 @@ public class MappingController {
         // Валидация языка
         if (!validateService.isValidLanguage(language)) {
             response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -97,12 +91,10 @@ public class MappingController {
         // Валидация Button ID
         if (!validateService.isValidName(buttonID, filenames)) {
             response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + buttonID);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
         response.put("mapping", fileService.getMapping("mapping/button/" + language + "/" + buttonID));
-        logger.info("Успешно получены соответствия из {} для воспроизведения кнопки на {}", buttonID, language);
         return ResponseEntity.ok(response);
     }
 
@@ -122,7 +114,6 @@ public class MappingController {
         // Валидация языка
         if (!validateService.isValidLanguage(language)) {
             response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -132,12 +123,10 @@ public class MappingController {
         // Валидация названия файла
         if (!validateService.isValidName(filename, filenames)) {
             response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + filename);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
         response.put("mapping", fileService.getMapping("mapping/amount/" + language + "/" + filename));
-        logger.info("Успешно получены соответствия из {} для воспроизведения введенной суммы на {}", filename, language);
         return ResponseEntity.ok(response);
     }
 
@@ -157,7 +146,6 @@ public class MappingController {
         // Валидация языка
         if (!validateService.isValidLanguage(language)) {
             response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -167,12 +155,10 @@ public class MappingController {
         // Валидация названия файла
         if (!validateService.isValidName(filename, filenames)) {
             response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + filename);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
         response.put("mapping", fileService.getMapping("mapping/total/" + language + "/" + filename));
-        logger.info("Успешно получены соответствия из {} для воспроизведения суммы пополнения на {}", filename, language);
         return ResponseEntity.ok(response);
     }
 
@@ -192,7 +178,6 @@ public class MappingController {
         // Валидация языка
         if (!validateService.isValidLanguage(language)) {
             response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -202,12 +187,10 @@ public class MappingController {
         // Валидация названия файла
         if (!validateService.isValidName(filename, filenames)) {
             response.put("available", filenames);
-            logger.error("Ошибка валидации имени файла: " + filename);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
         response.put("mapping", fileService.getMapping("mapping/balance/" + language + "/" + filename));
-        logger.info("Успешно получены соответствия из {} для воспроизведения суммы баланса на {}", filename, language);
         return ResponseEntity.ok(response);
     }
 }

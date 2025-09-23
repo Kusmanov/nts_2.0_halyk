@@ -11,17 +11,26 @@ public class ValidateService {
     private static final Logger logger = LogManager.getLogger(ValidateService.class);
 
     public boolean isValidLanguage(String language) {
-        return language.equals("kz") || language.equals("ru") || language.equals("en");
+        if (language.equals("kz") || language.equals("ru") || language.equals("en")) {
+            logger.error("Ошибка валидации языка: {}", language);
+            return true;
+        }
+        return false;
     }
 
     public boolean isValidNumber(int intNumber) {
-        return intNumber >= -999_999_999 && intNumber <= 999_999_999;
+        if (intNumber >= -999_999_999 && intNumber <= 999_999_999) {
+            logger.error("Ошибка валидации числа: {}", intNumber);
+            return true;
+        }
+        return false;
     }
 
     public boolean isValidFiles(List<String> audioFiles, List<String> filenames) {
         for (String file : audioFiles) {
             if (!filenames.contains(file)) {
                 if (!file.chars().allMatch(Character::isDigit)) {
+                    logger.error("Ошибка валидации имен файлов: {}", audioFiles);
                     return false;
                 }
             }
@@ -29,7 +38,11 @@ public class ValidateService {
         return true;
     }
 
-    public boolean isValidName(String name, List<String> filenames) {
-        return filenames.contains(name);
+    public boolean isValidName(String filename, List<String> filenames) {
+        if (filenames.contains(filename)) {
+            logger.error("Ошибка валидации имени файла: {}", filename);
+            return true;
+        }
+        return false;
     }
 }

@@ -38,6 +38,7 @@ public class FileService {
         } catch (IOException e) {
             logger.error("Ошибка чтения ресурса: {}", resourcePath, e);
         }
+        logger.info("Успешно получены соответствия из {}", resourcePath);
         return mapping;
     }
 

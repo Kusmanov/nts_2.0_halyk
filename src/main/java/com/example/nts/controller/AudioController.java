@@ -21,8 +21,6 @@ import java.util.*;
 @RequestMapping("/audio")
 @Tag(name = "Audio playback")
 public class AudioController {
-    private static final Logger logger = LogManager.getLogger(AudioController.class);
-
     @Autowired
     AudioService audioService;
 
@@ -52,7 +50,6 @@ public class AudioController {
         // Валидация языка
         if (!validateService.isValidLanguage(language)) {
             response.put("error", Collections.singletonList("invalid language"));
-            logger.error("Ошибка валидации языка: " + language);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -62,7 +59,6 @@ public class AudioController {
         // Валидация имени файлов
         if (!validateService.isValidFiles(audioFiles, filenames)) {
             response.put("available", filenames);
-            logger.error("Ошибка валидации файла(ов): " + audioFiles);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
@@ -74,7 +70,6 @@ public class AudioController {
                 // Валидация числа
                 if (!validateService.isValidNumber(intNumber)) {
                     response.put("error", Collections.singletonList("invalid number"));
-                    logger.error("Ошибка валидации числа: " + intNumber);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
                 }
 
