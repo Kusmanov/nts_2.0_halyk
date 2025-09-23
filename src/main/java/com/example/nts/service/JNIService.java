@@ -9,36 +9,22 @@ import java.util.List;
 public class JNIService {
     // JNI методы
     private native String convertToKazakh(int number);
-
     private native String convertToRussian(int number);
-
     private native String convertToEnglish(int number);
 
     // Оберточный метод для возврата последовательности в виде списка
     public List<String> getSequence(String language, int number) {
-        return switch (language) {
-            case "kz" -> {
-                String sequence = convertToKazakh(number);
-                if (sequence != null) {
-                    yield Arrays.asList(sequence.split(" "));
-                }
-                yield null;
-            }
-            case "ru" -> {
-                String sequence = convertToRussian(number);
-                if (sequence != null) {
-                    yield Arrays.asList(sequence.split(" "));
-                }
-                yield null;
-            }
-            case "en" -> {
-                String sequence = convertToEnglish(number);
-                if (sequence != null) {
-                    yield Arrays.asList(sequence.split(" "));
-                }
-                yield null;
-            }
-            default -> null;
-        };
+        if ("kz".equals(language)) {
+            String sequence = convertToKazakh(number);
+            return sequence != null ? Arrays.asList(sequence.split(" ")) : null;
+        } else if ("ru".equals(language)) {
+            String sequence = convertToRussian(number);
+            return sequence != null ? Arrays.asList(sequence.split(" ")) : null;
+        } else if ("en".equals(language)) {
+            String sequence = convertToEnglish(number);
+            return sequence != null ? Arrays.asList(sequence.split(" ")) : null;
+        } else {
+            return null;
+        }
     }
 }
