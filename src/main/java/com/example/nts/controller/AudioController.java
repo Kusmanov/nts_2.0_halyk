@@ -62,8 +62,6 @@ public class AudioController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        System.out.println(audioFiles);
-
         // Формирование последовательности слов для воспроизведения
         for (String audioFile : audioFiles) {
             try {
