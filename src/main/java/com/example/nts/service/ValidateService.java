@@ -18,7 +18,7 @@ public class ValidateService {
         return false;
     }
 
-    public boolean isValidNumber(int intNumber) {
+    public boolean isValidNumber(long intNumber) {
         if (intNumber >= -999_999_999 && intNumber <= 999_999_999) {
             return true;
         }

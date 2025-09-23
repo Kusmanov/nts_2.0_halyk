@@ -62,22 +62,26 @@ public class AudioController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
+        System.out.println(audioFiles);
+
         // Формирование последовательности слов для воспроизведения
         for (String audioFile : audioFiles) {
             try {
-                int intNumber = Integer.parseInt(audioFile);
+                long number = Long.parseLong(audioFile);
 
                 // Валидация числа
-                if (!validateService.isValidNumber(intNumber)) {
+                if (!validateService.isValidNumber(number)) {
                     response.put("error", Collections.singletonList("invalid number"));
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
                 }
+
+                int intNumber = (int) number; // Переводим в int тип
 
                 for (String strNumber : jniService.getSequence(language, intNumber)) {
                     sequence.add(strNumber + ".wav");
                 }
             } catch (Exception e) {
-                // Если текст не является числом, то он добавляется без изменений
+                // Если строка не распознается как Long, то она добавляется без изменений
                 sequence.add(audioFile);
             }
         }
