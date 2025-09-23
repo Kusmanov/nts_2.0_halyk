@@ -86,6 +86,7 @@ public class AudioService {
         try {
             Thread.sleep(200); // Задержка должна быть длительнее чем в методе playback
         } catch (Exception e) {
+            logger.error("Ошибка при попытке остановки воспроизведения аудио");
         }
     }
 }
