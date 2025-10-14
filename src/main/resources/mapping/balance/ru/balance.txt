@@ -4,4 +4,4 @@ $integer
 tenge.wav
 $fractional
 tiyn.wav
-023_2_ReceiptInfo_rus.wav
+023_2_ReceiptInfoCashIn_rus.wav

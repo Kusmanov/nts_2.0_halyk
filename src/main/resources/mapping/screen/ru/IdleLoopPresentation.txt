@@ -1,1 +1,3 @@
-001_2_IdleLoopPresentation_rus_welcome.wav
+001_IdleLoopPresentation_kaz_welcome.wav
+001_IdleLoopPresentation_rus_welcome.wav
+001_IdleLoopPresentation_eng_welcome.wav

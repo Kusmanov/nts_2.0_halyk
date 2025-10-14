@@ -73,13 +73,12 @@ setInterval(async function () {
 
 		    // Воспроизводим, если screenID поменялся
 		    if (screenID !== tempScreenID && screenID !== "ReceiptInfo" && screenID !== "PinEntry") {
-				if (Date.now() - screenPlayedAt > 1_000) { // Прошло больше 1000 мс
+				if (Date.now() - screenPlayedAt > 2_000) { // Прошло больше 2000 мс
 					tempScreenID = screenID; // Обновляем tempScreenID
                 	amountFirstPlayed = false;
+					screenPlayedAt = Date.now();
 
 					await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
-
-					screenPlayedAt = Date.now();
 				}
             }
 
@@ -90,8 +89,9 @@ setInterval(async function () {
                 let amount = cleanAmount(inputField.value);
                 // Воспроизводим, если amount поменялся
                 if (amount !== tempAmount) {
-					if (Date.now() - generalInputPlayedAt > 1_000) { // Прошло больше 1000 мс
+					if (Date.now() - generalInputPlayedAt > 2_000) { // Прошло больше 2000 мс
 						tempAmount = amount; // Обновляем tempAmount
+						generalInputPlayedAt = Date.now();
 
 						if (amount !== '0') {
                        		amountFirstPlayed = true;
@@ -102,8 +102,6 @@ setInterval(async function () {
 
 							await playbackButton('buttonCorrect', language); // Воспроизводим аудио файл(ы) для нажатой кнопки
 						}
-
-						generalInputPlayedAt = Date.now();
 					}
                 }
             }
@@ -113,19 +111,19 @@ setInterval(async function () {
             if (popupMain) {
                 let popupMainText = popupMain.innerText;
                 if (popupMainText !== tempPopupMainText) {
-					if (Date.now() - popupPlayedAt > 1_000) { // Прошло больше 1000 мс
+					if (Date.now() - popupPlayedAt > 2_000) { // Прошло больше 2000 мс
                     	tempPopupMainText = popupMainText; // Обновляем tempPopupMain
+                    	popupPlayedAt = Date.now();
 
 					    await playbackScreen("PopupMain", language); // Воспроизводим аудио файл(ы)
-
-						popupPlayedAt = Date.now();
 					}
                 }
             }
 
             if (screenID !== tempScreenID && screenID === "ReceiptInfo") {
-				if (Date.now() - receiptPlayedAt > 1_000) { // Прошло больше 1000 мс
+				if (Date.now() - receiptPlayedAt > 2_000) { // Прошло больше 2000 мс
 					tempScreenID = screenID; // Обновляем tempScreenID
+					receiptPlayedAt = Date.now();
 
 					// Получаем значение элемента MESSAGE_HEADER___generated для озвучки суммы транзакции
 					let varBlockSum = iframeDoc.getElementById("MESSAGE_HEADER___generated");
@@ -156,8 +154,6 @@ setInterval(async function () {
 							}
 						}
 					}
-
-					receiptPlayedAt = Date.now();
 				}
             }
 
@@ -165,16 +161,15 @@ setInterval(async function () {
 				let headline = iframeDoc.getElementById("headline").innerText.split("\n")[0].trim();
 				console.log(headline);
 
-				if (Date.now() - pinEntryPlayedAt > 1_000) { // Прошло больше 1000 мс
+				if (Date.now() - pinEntryPlayedAt > 2_000) { // Прошло больше 2000 мс
 					tempScreenID = screenID; // Обновляем tempScreenID
+					pinEntryPlayedAt = Date.now();
 
 					if (pinEntryHeadlines.includes(headline)) {
 						await playbackScreen("PinEntryWrong", language);
 					} else {
 						await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
 					}
-
-					pinEntryPlayedAt = Date.now();
 				}
 			}
 		}
@@ -192,7 +187,7 @@ setInterval(async function () {
 		tempScreenID = '';
 		tempPopupMainText = '';
 	}
-}, 500); // Проверяем каждые 500 мс
+}, 1000); // Проверяем каждые 1000 мс
 
 /* ********************************************************* */
 
@@ -268,7 +263,7 @@ async function playbackBalance(sign, integerPart, fractionalPart, language) {
 /* ********************************************************* */
 
 function cleanAmount(amount) {
-    return amount.replace(/₸\s?/g, '').replace(/\./g, '');
+    return amount.replace(/₸\s?/g, '').replace(/[.,]/g, '');
 }
 
 function updateLanguage(language) {
@@ -281,43 +276,43 @@ function updateLanguage(language) {
 }
 
 function activateBlur(iframeDoc) {
-  iframeDoc.body.style.filter = "blur(2px)";
-  //iframeDoc.body.style.pointerEvents = "none"; // блокируем клики
+  iframeDoc.body.style.filter = "blur(40px)";
+  iframeDoc.body.style.pointerEvents = "none"; // блокируем клики
 }
 
 function deactivateBlur(iframeDoc) {
   iframeDoc.body.style.filter = "";
-  //iframeDoc.body.style.pointerEvents = "";
+  iframeDoc.body.style.pointerEvents = "";
 }
 
 /* ********************************************************* */
 
-async function playback(mapping, language) {
-	return await sendPostRequest('http://localhost:8081/audio/playback', { audioFiles: mapping, language });
+function playback(mapping, language) {
+	return sendPostRequest('http://localhost:8081/audio/playback', { audioFiles: mapping, language });
 }
 
-async function stopPlayback() {
-	return await sendGetRequest('http://localhost:8081/audio/stop-playback');
+function stopPlayback() {
+	return sendGetRequest('http://localhost:8081/audio/stop-playback');
 }
 
-async function getScreenMapping(screenID, language) {
-	return await sendPostRequest('http://localhost:8081/mapping/screen', { screenID, language });
+function getScreenMapping(screenID, language) {
+	return sendPostRequest('http://localhost:8081/mapping/screen', { screenID, language });
 }
 
-async function getButtonMapping(buttonID, language) {
-	return await sendPostRequest('http://localhost:8081/mapping/button', { buttonID, language });
+function getButtonMapping(buttonID, language) {
+	return sendPostRequest('http://localhost:8081/mapping/button', { buttonID, language });
 }
 
-async function getAmountMapping(filename, language) {
-	return await sendPostRequest('http://localhost:8081/mapping/amount', { filename, language });
+function getAmountMapping(filename, language) {
+	return sendPostRequest('http://localhost:8081/mapping/amount', { filename, language });
 }
 
-async function getTotalMapping(filename, language) {
-	return await sendPostRequest('http://localhost:8081/mapping/total', { filename, language });
+function getTotalMapping(filename, language) {
+	return sendPostRequest('http://localhost:8081/mapping/total', { filename, language });
 }
 
-async function getBalanceMapping(filename, language) {
-	return await sendPostRequest('http://localhost:8081/mapping/balance', { filename, language });
+function getBalanceMapping(filename, language) {
+	return sendPostRequest('http://localhost:8081/mapping/balance', { filename, language });
 }
 
 /* ********************************************************* */

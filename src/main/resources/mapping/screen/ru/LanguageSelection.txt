@@ -1,3 +1,7 @@
 delay_01.wav
 delay_01.wav
+delay_01.wav
+delay_01.wav
+001_LanguageSelection_kaz.wav
 001_LanguageSelection_rus.wav
+001_LanguageSelection_eng.wav
