@@ -1,0 +1,7 @@
+023_1_ReceiptInfo_eng.wav
+$sign
+$integer
+tenge.wav
+$fractional
+tiyn.wav
+023_2_ReceiptInfoCashIn_eng.wav

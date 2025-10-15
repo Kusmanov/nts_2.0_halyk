@@ -1,0 +1,4 @@
+016.1_ReceiptInfoCashIn_kaz.wav
+$total
+tenge.wav
+023_2_ReceiptInfoCashIn_kaz.wav

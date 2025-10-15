@@ -1,0 +1,8 @@
+delay_01.wav
+delay_01.wav
+007_1_WithdrawalAlternativeAmountInput_eng.wav
+$amount
+tenge.wav
+007_2_WithdrawalAlternativeAmountInput_eng.wav
+007_3_WithdrawalAlternativeAmountInput_eng.wav
+007_4_WithdrawalAlternativeAmountInput_eng.wav
