@@ -1,6 +1,6 @@
 spring:
   application:
-    name: nts3.0
+    name: nts3.1
 
 server:
   port: 8081
