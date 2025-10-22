@@ -1,5 +1,6 @@
 delay_01.wav
 delay_01.wav
+delay_01.wav
 007_1_WithdrawalAlternativeAmountInput_rus.wav
 $amount
 tenge.wav
