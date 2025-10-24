@@ -168,7 +168,7 @@ setInterval(async function () {
 					pinEntryPlayedAt = Date.now();
 
 				    let headline = iframeDoc.getElementById("headline").innerText.split("\n")[0].trim();
-				    let pinDigitContainerCount = document.querySelectorAll('.pinDigitContainer').length;
+				    let pinDigitContainerCount = iframeDoc.querySelectorAll('.pinDigitContainer').length;
 
 					if (pinEntryHeadlines.includes(headline)) {
 						if (pinDigitContainerCount == 6) {
