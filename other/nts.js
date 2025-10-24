@@ -11,6 +11,7 @@ var pinEntryHeadlines = ["Сіз қате PIN енгіздіңіз!", "Вы вв
 
 var language = '';
 var amountFirstPlayed = false;
+var isBlurred = false;
 var screenPlayedAt = 0;
 var generalInputPlayedAt = 0;
 var popupPlayedAt = 0;
@@ -28,15 +29,27 @@ setInterval(async function () {
 	let iframeDoc = iframe.contentDocument;
 	if (!iframeDoc) return console.error("iframeDoc not found");
 
+    // Получаем id экрана
+    let bodyElement = iframeDoc.querySelector('body');
+    if (!bodyElement) return console.error("bodyElement not found");
+    let screenID = bodyElement.getAttribute('data-view-key');
+    if (!screenID) return console.error("screenID not found");
+
+    console.log(screenID);
+
     // Получаем состояние headset
 	let headset = await Wincor.UI.Service.Provider.DataService.getValues("DCWEB_HEADSET_PLUGGED");
 	// Если headset подключен
 	if (headset.DCWEB_HEADSET_PLUGGED === '1') {
         // Добавляем размытие
 		activateBlur(iframeDoc);
+		isBlurred = true;
         // Активируем окно выбора языка
         Wincor.UI.Service.Provider.DataService.setValues("BSTAFW_PROP_HEADPHONES_STATUS", 1);
+
+        // Имитация нажатий кнопок ATM
         // Wincor.UI.Service.Provider.ViewService.endView(Wincor.UI.Service.Provider.ViewService.UIRESULT_OK, "WITHDRAWAL", "WITHDRAWAL");
+        // Wincor.UI.Service.Provider.ViewService.endView(Wincor.UI.Service.Provider.ViewService.UIRESULT_OK, "CANCEL", "CANCEL");
 
 		// Получаем значение элемента lang
 		let lang = Wincor.UI.Service.Provider.LocalizeService.currentLanguage;
@@ -59,14 +72,6 @@ setInterval(async function () {
 			default:
 				return console.error("language not found");
 		}
-
-		// Получаем id экрана
-		let bodyElement = iframeDoc.querySelector('body');
-		if (!bodyElement) return console.error("bodyElement not found");
-		let screenID = bodyElement.getAttribute('data-view-key');
-		if (!screenID) return console.error("screenID not found");
-
-		console.log(screenID);
 
 		// Воспроизводим все, кроме исключенных
 		if (!excludedScreens.includes(screenID)) {
@@ -110,7 +115,7 @@ setInterval(async function () {
             let popupMain = iframeDoc.getElementById('popupMain');
             if (popupMain) {
                 let popupMainText = popupMain.innerText;
-                if (popupMainText !== tempPopupMainText) {
+                if (popupMainText !== tempPopupMainText || Date.now() - popupPlayedAt > 20_000) { // Прошло больше 20000 мс
 					if (Date.now() - popupPlayedAt > 2_000) { // Прошло больше 2000 мс
                     	tempPopupMainText = popupMainText; // Обновляем tempPopupMain
                     	popupPlayedAt = Date.now();
@@ -158,34 +163,52 @@ setInterval(async function () {
             }
 
 			if (screenID !== tempScreenID && screenID === "PinEntry") {
-				let headline = iframeDoc.getElementById("headline").innerText.split("\n")[0].trim();
-				console.log(headline);
-
 				if (Date.now() - pinEntryPlayedAt > 2_000) { // Прошло больше 2000 мс
 					tempScreenID = screenID; // Обновляем tempScreenID
 					pinEntryPlayedAt = Date.now();
 
+				    let headline = iframeDoc.getElementById("headline").innerText.split("\n")[0].trim();
+				    let pinDigitContainerCount = document.querySelectorAll('.pinDigitContainer').length;
+
 					if (pinEntryHeadlines.includes(headline)) {
-						await playbackScreen("PinEntryWrong", language);
+						if (pinDigitContainerCount == 6) {
+						    await playbackScreen("PinEntryWrongSixPinDigitContainer", language);
+						} else {
+						    await playbackScreen("PinEntryWrong", language);
+						}
 					} else {
-						await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
+                        if (pinDigitContainerCount == 6) {
+                            await playbackScreen("PinEntrySixPinDigitContainer", language);
+                        } else {
+                            await playbackScreen(screenID, language); // Воспроизводим аудио файл(ы)
+                        }
 					}
 				}
 			}
 		}
-	} else {
-		// Убираем размытие
-		deactivateBlur(iframeDoc);
-		// Деактивируем окно выбора языка
-		Wincor.UI.Service.Provider.DataService.setValues("BSTAFW_PROP_HEADPHONES_STATUS", 0);
-		// Останавливаем предыдущее воспроизведение, если есть
-		await stopPlayback();
+	} else if (isBlurred) {
+        // Деактивируем окно выбора языка
+        Wincor.UI.Service.Provider.DataService.setValues("BSTAFW_PROP_HEADPHONES_STATUS", 0);
+        // Останавливаем предыдущее воспроизведение, если есть
+        await stopPlayback();
 
-		// Сбрасываем все параметры
-		tempLanguage = '';
-		tempAmount = '';
-		tempScreenID = '';
-		tempPopupMainText = '';
+        // Если экран отображения чека, то завершаем этап
+        if (screenID === "ReceiptInfo") {
+            Wincor.UI.Service.Provider.ViewService.endView(Wincor.UI.Service.Provider.ViewService.UIRESULT_OK, "CANCEL", "CANCEL");
+        }
+
+        // Задержка 2000 мс
+        setTimeout(() => {
+            // Убираем размытие
+            deactivateBlur(iframeDoc);
+            isBlurred = false;
+
+            // Сбрасываем все параметры
+            tempLanguage = '';
+            tempAmount = '';
+            tempScreenID = '';
+            tempPopupMainText = '';
+        }, 2000);
 	}
 }, 1000); // Проверяем каждые 1000 мс
 
