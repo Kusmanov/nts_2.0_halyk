@@ -193,11 +193,12 @@ setInterval(async function () {
         await stopPlayback();
 
         // Если экран отображения чека, то завершаем этап
-        if (screenID === "ReceiptInfo") {
-            Wincor.UI.Service.Provider.ViewService.endView(Wincor.UI.Service.Provider.ViewService.UIRESULT_OK, "CANCEL", "CANCEL");
-        }
+		if (screenID === "ReceiptInfo") {
+			setTimeout(() => {
+				Wincor.UI.Service.Provider.ViewService.endView(Wincor.UI.Service.Provider.ViewService.UIRESULT_OK, "CANCEL", "CANCEL");
+			}, 1000);
+		}
 
-        // Задержка 2000 мс
         setTimeout(() => {
             // Убираем размытие
             deactivateBlur(iframeDoc);
@@ -208,7 +209,7 @@ setInterval(async function () {
             tempAmount = '';
             tempScreenID = '';
             tempPopupMainText = '';
-        }, 2000);
+        }, 4000);
 	}
 }, 1000); // Проверяем каждые 1000 мс
 
