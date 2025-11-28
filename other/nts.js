@@ -8,6 +8,21 @@ var balanceHeadlines = ["Шоттағы қалдық", "Остаток на сч
 var totalHeadlines = ["Қолма-қол ақша енгізу", "Взнос наличных", "Deposit Notes"];
 var withdrawalHeadlines = ["Қолма-қол ақша алу", "Выдача наличности", "Withdraw Notes"];
 var pinEntryHeadlines = ["Сіз қате PIN енгіздіңіз!", "Вы ввели неверный PIN!", "PIN code entered is incorrect!"];
+var coutFeeWarningMessage0 = [
+    "Қолма-қол ақшаны алу үшін комиссия көлемі картаны шығарған банкпен белгіленеді",
+    "Комиссия за снятие установлена Банком, выпустившим Вашу карту",
+    "Withdrawal fee is set by a Bank that issued your card"
+];
+var coutFeeWarningMessage1 = [
+    "American Express карталары бойынша қолма-қол ақша алу үшін 4% көлемінде комиссия ұсталынады",
+    "По картам American Express комиссия за снятие наличных составляет 4%",
+    "Withdrawal fee for American Express cards is 4%"
+];
+var coutFeeWarningMessage2 = [
+    "Diners Club карталары бойынша қолма-қол ақша алу үшін комиссия көлемі",
+    "Комиссия за снятие наличных по картам Diners Club",
+    "Withdrawal fee for Diners Club cards"
+];
 
 var language = '';
 var amountFirstPlayed = false;
@@ -17,6 +32,8 @@ var generalInputPlayedAt = 0;
 var popupPlayedAt = 0;
 var receiptPlayedAt = 0;
 var pinEntryPlayedAt = 0;
+var coutFeeWarningPlayedAt = 0;
+var coutLimitsWarningPlayedAt = 0;
 
 /* ********************************************************* */
 
@@ -75,9 +92,14 @@ setInterval(async function () {
 
 		// Воспроизводим все, кроме исключенных
 		if (!excludedScreens.includes(screenID)) {
-
 		    // Воспроизводим, если screenID поменялся
-		    if (screenID !== tempScreenID && screenID !== "ReceiptInfo" && screenID !== "PinEntry") {
+            if (
+              screenID !== tempScreenID &&
+              screenID !== "ReceiptInfo" &&
+              screenID !== "PinEntry" &&
+              screenID !== "COUTFeeWarning" &&
+              screenID !== "COUTLimitsWarning"
+            ) {
 				if (Date.now() - screenPlayedAt > 2_000) { // Прошло больше 2000 мс
 					tempScreenID = screenID; // Обновляем tempScreenID
                 	amountFirstPlayed = false;
@@ -185,6 +207,42 @@ setInterval(async function () {
 					}
 				}
 			}
+
+			if (screenID !== tempScreenID && screenID === "COUTFeeWarning") {
+                if (Date.now() - coutFeeWarningPlayedAt > 2_000) { // Прошло больше 2000 мс
+                    tempScreenID = screenID; // Обновляем tempScreenID
+                    coutFeeWarningPlayedAt = Date.now();
+
+                    const message = iframeDoc.getElementById('MESSAGE');
+                    const text = message.textContent;
+
+                    if (coutFeeWarningMessage0.some(msg => text.includes(msg))) {
+                        await playbackScreen("COUTFeeWarningMessage0", language);
+                    } else if (coutFeeWarningMessage1.some(msg => text.includes(msg))) {
+                        await playbackScreen("COUTFeeWarningMessage1", language);
+                    } else if (coutFeeWarningMessage2.some(msg => text.includes(msg))) {
+                        await playbackScreen("COUTFeeWarningMessage2", language);
+                    }
+                }
+			}
+
+            if (screenID !== tempScreenID && screenID === "COUTLimitsWarning") {
+                if (Date.now() - coutLimitsWarningPlayedAt > 2_000) { // Прошло больше 2000 мс
+                    tempScreenID = screenID; // Обновляем tempScreenID
+                    coutLimitsWarningPlayedAt = Date.now();
+
+                    const message = iframeDoc.getElementById('MESSAGE');
+                    const text = message.textContent;
+
+                    if (/\b10000\b/.test(text)) {
+                        await playbackScreen("COUTLimitsWarningMessage0", language);
+                    } else if (/\b100000\b/.test(text)) {
+                        await playbackScreen("COUTLimitsWarningMessage1", language);
+                    } else if (/\b500000\b/.test(text)) {
+                        await playbackScreen("COUTLimitsWarningMessage2", language);
+                    }
+                }
+            }
 		}
 	} else if (isBlurred) {
         // Деактивируем окно выбора языка
@@ -312,31 +370,31 @@ function deactivateBlur(iframeDoc) {
 /* ********************************************************* */
 
 function playback(mapping, language) {
-	return sendPostRequest('http://localhost:8081/audio/playback', { audioFiles: mapping, language });
+	return sendPostRequest('http://localhost:8088/audio/playback', { audioFiles: mapping, language });
 }
 
 function stopPlayback() {
-	return sendGetRequest('http://localhost:8081/audio/stop-playback');
+	return sendGetRequest('http://localhost:8088/audio/stop-playback');
 }
 
 function getScreenMapping(screenID, language) {
-	return sendPostRequest('http://localhost:8081/mapping/screen', { screenID, language });
+	return sendPostRequest('http://localhost:8088/mapping/screen', { screenID, language });
 }
 
 function getButtonMapping(buttonID, language) {
-	return sendPostRequest('http://localhost:8081/mapping/button', { buttonID, language });
+	return sendPostRequest('http://localhost:8088/mapping/button', { buttonID, language });
 }
 
 function getAmountMapping(filename, language) {
-	return sendPostRequest('http://localhost:8081/mapping/amount', { filename, language });
+	return sendPostRequest('http://localhost:8088/mapping/amount', { filename, language });
 }
 
 function getTotalMapping(filename, language) {
-	return sendPostRequest('http://localhost:8081/mapping/total', { filename, language });
+	return sendPostRequest('http://localhost:8088/mapping/total', { filename, language });
 }
 
 function getBalanceMapping(filename, language) {
-	return sendPostRequest('http://localhost:8081/mapping/balance', { filename, language });
+	return sendPostRequest('http://localhost:8088/mapping/balance', { filename, language });
 }
 
 /* ********************************************************* */

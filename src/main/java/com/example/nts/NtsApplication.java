@@ -16,9 +16,9 @@ public class NtsApplication {
                  ║██║█║██╠══╣██╠══╣██████║
                 ╔╝██╠╗███╚═╦╝██╚╦═╩═══███║
                 ║███║╚╗████║████║████████║
-                ╚═══╝ ╚════╩════╩════════╝ 3.2
+                ╚═══╝ ╚════╩════╩════════╝ 3.3
                 
-                http://localhost:8081/swagger-ui/index.html
+                http://localhost:8088/swagger-ui/index.html
                 """);
     }
 }
